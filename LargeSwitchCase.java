@@ -1,4 +1,4 @@
-public class LargeSwitch {  
+public class LargeSwitchCase {  
     public static void main(String[] args) {  
         int day = 3;  
         switch (day) {  
