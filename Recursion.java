@@ -1,10 +1,6 @@
 public class Recursion {  
-    public static void main(String[] args) {  
-        System.out.println(factorial(5));  
-    }  
-    
-    static int factorial(int n) {  
+    public int factorial(int n) {  
         if (n <= 1) return 1;  
-        return n * factorial(n - 1);  // Recursive call  
+        return n * factorial(n-1);  // Recursive call  
     }  
 }  

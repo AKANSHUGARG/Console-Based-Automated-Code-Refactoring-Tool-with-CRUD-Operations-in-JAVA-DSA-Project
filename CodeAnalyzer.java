@@ -1,4 +1,6 @@
 import java.util.*;
+import java.util.regex.Pattern;  
+import java.util.regex.Matcher; 
 
 public class CodeAnalyzer {
     public List<RefactorSuggestion> analyze(String code) {
@@ -28,40 +30,43 @@ public class CodeAnalyzer {
             ));
         }
 
-        // 4. Detect unused variables
-        if (code.matches(".int\\s+\\w+\\s;.") && !code.matches(".\\w+\\s*=.*")) {
-            suggestions.add(new RefactorSuggestion(
-                "Possibly unused variable",
-                "Check for declared but unused variables to reduce memory usage."
-            ));
-        }
+        // 4. Detect unused variables 
+        Pattern varPattern = Pattern.compile("\\b(int|double|float|long|char|boolean|String)\\s+(\\w+)\\s*;");  
+        Matcher varMatcher = varPattern.matcher(code);  
+        while (varMatcher.find()) {  
+            String varName = varMatcher.group(2);  
+            // Check if variable is used anywhere except in its declaration  
+            if (!code.replace(varMatcher.group(), "").matches("(?s).*\\b" + varName + "\\b.*")) {  
+                suggestions.add(new RefactorSuggestion(  
+                    "Unused variable: " + varName,  
+                    "Remove unused variable to clean up the code."  
+                ));  
+            }  
+        }    
 
         // 5. Detect magic numbers
-        if (code.matches(".[^\\w](\\d{2,})[^\\w].")) {
-            suggestions.add(new RefactorSuggestion(
-                "Magic number detected",
-                "Replace hard-coded numbers with named constants for better readability and maintainability."
-            ));
-        }
+        if (code.matches("(?s).*\\b\\d{2,}\\b.*")) {  
+            suggestions.add(new RefactorSuggestion(  
+                "Magic number detected",  
+                "Replace hard-coded numbers with named constants for better readability and maintainability."  
+            ));  
+        }    
 
-        // 6. Detect recursion
-        if (code.contains("return") && code.contains("(") && code.contains(")")) {
-            String[] lines = code.split("\n");
-            for (String line : lines) {
-                if (line.trim().startsWith("return") && line.contains("(") && line.contains(")")) {
-                    String[] words = line.split("[^a-zA-Z0-9_]");
-                    for (String word : words) {
-                        if (!word.isBlank() && code.contains("void " + word + "(")) {
-                            suggestions.add(new RefactorSuggestion(
-                                "Recursive call detected",
-                                "Ensure base condition is present and consider converting to iterative if stack overflow is a risk."
-                            ));
-                            break;
-                        }
-                    }
-                }
-            }
-        }
+       // 6. Detect recursion  
+        Pattern methodPattern = Pattern.compile("\\b(\\w+)\\s*\\([^)]*\\)\\s*\\{");  
+        Matcher methodMatcher = methodPattern.matcher(code);  
+
+        while (methodMatcher.find()) {  
+            String methodName = methodMatcher.group(1);  
+            // Look for calls to this same method within its body  
+            String methodBody = code.substring(methodMatcher.end());  
+            if (methodBody.matches("(?s).*\\b" + methodName + "\\s*\\(.*")) {  
+                suggestions.add(new RefactorSuggestion(  
+                    "Recursive call detected in method: " + methodName,  
+                    "Ensure base condition is present and consider converting to iterative if stack overflow is a risk."  
+                ));  
+            }  
+        }      
 
         // 7. Detect large switch-case blocks
         if (code.contains("switch") && code.split("case").length > 5) {
